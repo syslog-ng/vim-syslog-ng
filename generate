@@ -1,0 +1,33 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'erb'
+require 'date'
+require 'json'
+
+if ARGV.count != 1
+  warn "usage: #{$PROGRAM_NAME} path/to/syslog-ng-cfg-helper.db"
+  exit 1
+end
+
+db = JSON.parse(File.read(ARGV[0]))
+@contexts = db['contexts'].keys
+
+def find_keywords(hash)
+  keywords = []
+  hash.each do |key, value|
+    if key == 'name' && value && !value.start_with?('<')
+      keywords << value
+      keywords << value.gsub('-', '_')
+    elsif value.is_a?(Hash)
+      keywords += find_keywords(value)
+    end
+  end
+  keywords
+end
+
+@keywords = find_keywords(db).compact.sort.uniq
+@keywords -= @contexts
+
+erb = ERB.new(File.read('syntax/syslog-ng.vim.erb'))
+File.write('syntax/syslog-ng.vim', erb.result)

@@ -1,0 +1,78 @@
+" Vim syntax file
+" Language:	syslog-ng
+" Maintainer:	syslog-ng contributors
+" Updaters:	Refer to `git log`
+" URL:		https://github.com/syslog-ng/syslog-ng/tree/master/contrib/vim
+" Changes:	Refer to `git log`
+" Last Change:	<%= Date.today.to_s %>
+
+if exists("b:current_syntax")
+    finish
+endif
+
+" Remove any old syntax stuff hanging around
+syn clear
+syn case match
+set iskeyword=a-z,A-Z,48-57,_,-
+
+syn keyword sysngObject log
+syn keyword sysngObject if else elif
+" We cannot use keyword here because of higher priority
+syn match sysngObject "\(<%= @contexts.join('\|') %>\)"
+
+syn match sysngParameter "\(<%= @contexts.join('\|') %>\)\ze[[:blank:]]*("
+
+syn keyword sysngParameter <%= @keywords.join(' ') %>
+
+syn keyword sysngBool		yes on no off auto
+syn keyword sysngOperator	and or
+
+syn keyword sysngParameter	remote-control remote_control system
+
+syn keyword sysngIdentifier	escape-double-char escape_double_char escape-none escape_none flow-control flow_control no-parse no_parse nv-pairs nv_pairs pcre regexp store-matches store_matches string strip-whitespace strip_whitespace substring
+
+" Priority
+syn keyword sysngIdentifier	emerg alert crit err warning notice info debug
+" Deprecaty Priority
+syn keyword sysngIdentifier	panic error warn
+" Facilities
+syn keyword sysngIdentifier	kern user mail daemon auth syslog lpr news uucp cron authpriv ftp ntp security console solaris-cron local0 local1 local2 local3 local4 local5 local6 local7
+
+syn match sysngComment		"#.*$"
+
+" String
+syn region sysngString start=+"+ end=+"+ skip=+\\"+ contains=sysngVariableInterpolation
+syn region sysngString start=+'+ end=+'+ skip=+\\'+
+syn region sysngString start=+`+ end=+`+
+syn region sysngVariableInterpolation start="${" end="}" contained
+
+" Numbers
+syn match sysngOctNumber	"\<0\o\+\>"
+syn match sysngDecNumber	"\<[0-9]\>"
+syn match sysngDecNumber	"\<[1-9]\d\+\>"
+syn match sysngHexNumber	"\<0x\x\+\>"
+syn match sysngIdentifier	"\<[<%= @contexts.map { |context| context[0] }.sort.uniq.join %>]_[[:alnum:]_-]\+\>"
+syn match sysngObject		"@version: *\d\+\.\d\+"
+syn match sysngObject		"@include"
+syn match sysngObject		"@define"
+syn match sysngObject		"@module"
+syn match sysngObject		"@requires"
+
+if !exists("did_sysng_syntax_inits")
+    let did_sysng_syntax_inits = 1
+
+    hi link sysngObject			Statement
+    hi link sysngComment		Comment
+    hi link sysngString			String
+    hi link sysngOctNumber		Number
+    hi link sysngDecNumber		Number
+    hi link sysngHexNumber		Number
+    hi link sysngBool			Constant
+    hi link sysngIdentifier		Identifier
+    hi link sysngVariableInterpolation	Identifier
+
+    hi link sysngParameter		Type
+    hi link sysngOperator		Operator
+endif
+
+let b:current_syntax = "syslog-ng"
