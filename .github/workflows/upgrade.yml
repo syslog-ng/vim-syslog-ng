@@ -1,0 +1,59 @@
+name: Upgrade
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '00 23 * * *'
+
+jobs:
+  upgrade:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout vim-syslog-ng source
+        uses: actions/checkout@v3
+
+      - name: Prepare environment
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          python3 -m venv ~/venv
+
+      - name: Install syslog-ng-cfg-helper
+        id: syslog-ng-cfg-helper
+        run: |
+          source ~/venv/bin/activate
+          pip install syslog-ng-cfg-helper
+          echo "version=$(pip show syslog-ng-cfg-helper | grep Version | cut -d' ' -f2)" >> "$GITHUB_OUTPUT"
+          echo "db-file-path=$(find ~/venv -name syslog-ng-cfg-helper.db)" >> "$GITHUB_OUTPUT"
+
+      - name: Generate vim syntax highlight
+        run: |
+          ./generate "${{ steps.syslog-ng-cfg-helper.outputs.db-file-path }}"
+
+      - name: Open Pull Request if needed
+        run: |
+          CHANGES=$(git diff | grep "^[-\+]" | grep -v "syntax/syslog-ng\.vim\|Last Change" | wc -l)
+          if [ $CHANGES -ne 0 ]
+          then
+            VERSION="${{ steps.syslog-ng-cfg-helper.outputs.version }}"
+            BRANCH="syslog-ng-cfg-helper-$VERSION"
+            EXISTING_PR=$(gh pr list --state open --head "$BRANCH" --json number --jq ". | length")
+            if [ $EXISTING_PR -eq 0 ]
+            then
+              TITLE="syslog-ng-cfg-helper: $VERSION"
+              BODY="Generate from https://pypi.org/project/syslog-ng-cfg-helper/$VERSION"
+              git switch -c "$BRANCH"
+              git commit -a -s -m "$TITLE"
+              git push --force origin "$BRANCH"
+              gh pr create --title "$TITLE" --body "$BODY"
+            else
+              echo "Pull Request already exists"
+            fi
+          else
+            echo "No functional change"
+          fi
