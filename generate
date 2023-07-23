@@ -11,7 +11,7 @@ if ARGV.count != 1
 end
 
 db = JSON.parse(File.read(ARGV[0]))
-@contexts = db['contexts'].keys
+@contexts = db['contexts'].keys.sort
 
 def find_keywords(hash)
   keywords = []
