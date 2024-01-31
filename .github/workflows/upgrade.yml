@@ -46,11 +46,17 @@ jobs:
             if [ $EXISTING_PR -eq 0 ]
             then
               TITLE="syslog-ng-cfg-helper: $VERSION"
-              BODY="Generate from https://pypi.org/project/syslog-ng-cfg-helper/$VERSION"
+              BODY=$(mktemp)
+              echo "Generated from https://pypi.org/project/syslog-ng-cfg-helper/$VERSION" > $BODY
+              echo >> $BODY
+              echo "For your convenience, here is a human-readable diff of the change:" >> $BODY
+              echo "```diff" >> $BODY
+              diff -u --label a/syntax/syslog-ng.vim <(git diff syntax/syslog-ng.vim | grep '^-syn keyword' | tr ' ' '\n' | tail -n +3) --label b/syntax/syslog-ng.vim <(git diff syntax/syslog-ng.vim | grep '^+syn keyword' | tr ' ' '\n' | tail -n +3) >> $BODY
+              echo "```" >> $BODY
               git switch -c "$BRANCH"
               git commit -a -s -m "$TITLE"
               git push --force origin "$BRANCH"
-              gh pr create --title "$TITLE" --body "$BODY"
+              gh pr create --title "$TITLE" --body-file "$BODY"
             else
               echo "Pull Request already exists"
             fi
