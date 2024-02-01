@@ -16,7 +16,7 @@ db = JSON.parse(File.read(ARGV[0]))
 def find_keywords(hash)
   keywords = []
   hash.each do |key, value|
-    if key == 'name' && value && !value.start_with?('<')
+    if key == 'name' && value && value.is_a?(String) && !value.start_with?('<')
       keywords << value
       keywords << value.gsub('-', '_')
     elsif value.is_a?(Hash)
